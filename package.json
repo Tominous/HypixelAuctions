@@ -1,0 +1,31 @@
+{
+  "name": "hypixelauctions",
+  "version": "1.0.0",
+  "description": "A backend that interacts with the hypixel api.",
+  "main": "index.js",
+  "dependencies": {
+    "atob": "^2.1.2",
+    "express": "^4.17.1",
+    "minecraft-items": "^0.4.3",
+    "mongoose": "^5.7.5",
+    "nbt": "^0.8.1",
+    "node-fetch": "^2.6.0",
+    "pako": "^1.0.10",
+    "prismarine-nbt": "^1.2.1",
+    "zlib": "^1.0.5"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jtagt/HypixelAuctions.git"
+  },
+  "author": "Jackson Tagtmeier",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jtagt/HypixelAuctions/issues"
+  },
+  "homepage": "https://github.com/jtagt/HypixelAuctions#readme"
+}
