@@ -6,12 +6,15 @@
   "dependencies": {
     "atob": "^2.1.2",
     "express": "^4.17.1",
+    "jsonwebtoken": "^8.5.1",
+    "lodash": "^4.17.15",
     "minecraft-items": "^0.4.3",
     "mongoose": "^5.7.5",
     "nbt": "^0.8.1",
     "node-fetch": "^2.6.0",
     "pako": "^1.0.10",
     "prismarine-nbt": "^1.2.1",
+    "ws": "^7.2.0",
     "zlib": "^1.0.5"
   },
   "devDependencies": {},

@@ -1,3 +1,7 @@
 {
-    "token": ""
+    "token": "4067e461-2b1e-418d-8502-1b00514bc7e1",
+    "mongodb": "mongodb://jackson:12321@157.245.209.149:27017/hypixel",
+    "ws_port": 5001,
+    "http_port": 5000,
+    "secret": "iudhewuhfwhf"
 }

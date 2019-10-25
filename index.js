@@ -1,15 +1,7 @@
-const Auctions = require('./routes/Auctions');
-const Items = require('./routes/Item');
-const express = require('express');
-const app = express();
+const Server = require('./Server');
+const Auctions = require('./handlers/UserConnections');
 
-const { startLoop, itemData, auctionData, allAuctionsData } = require('./jobs');
+const server = new Server();
+const auctions = new Auctions();
 
-app.use('/api', Auctions);
-app.use('/api', Items);
-
-app.listen(5000);
-
-startLoop();
-
-module.exports = { itemData, auctionData, allAuctionsData };
+server.start();
