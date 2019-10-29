@@ -1,13 +1,13 @@
 const router = require('express').Router();
 const config = require('../config.json');
 const Database = require('../storage/Mongo');
-const HypixelAPI = require('../hypixel/index');
-const Hypixel = new HypixelAPI(config.token);
+const HypixelAPI = require('../handlers/Hypixel');
+const { auctionList } = require('../handlers/AuctionCache');
+const Hypixel = new HypixelAPI(config.auctionToken, config.userToken);
 const db = new Database();
-const { itemData, auctionData, allAuctionsData } = require('../jobs');
 
 router.get('/auctions', async (req, res) => {
-    const auctions = await allAuctionsData();
+    const auctions = auctionList;
     const itemsPerPage = req.query.items || 10;
     const pageCount = Math.floor(auctions.size / itemsPerPage);
     let page = parseInt(req.query.page || 1);

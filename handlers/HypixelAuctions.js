@@ -4,13 +4,11 @@ const config = require('../config');
 const Hypixel = require('./Hypixel');
 const Auction = require('../types/Auction');
 const Database = require('../storage/Mongo');
+const { emitter: auctionCache } = require('./AuctionCache');
 
 class HypixelAuctions extends EventEmitter {
     constructor() {
         super();
-
-        this.loop = null;
-        this.interval = 15000;
 
         this.auctions = new Map();
         this.insertQueue = [];
@@ -20,10 +18,10 @@ class HypixelAuctions extends EventEmitter {
 
         this.hypixelApi = new Hypixel(config.token);
         this.db = new Database();
-    }
 
-    init() {
-        this.loop = setInterval(() => this.fetchAuctions(), this.interval);
+        auctionCache.on('auctionPage', auctionData => this.processAuction(auctionData));
+
+        setInterval(() => this.checkAuctions(), 1000);
     }
 
     async processAuction(auctionPage) {
@@ -33,25 +31,14 @@ class HypixelAuctions extends EventEmitter {
                 auction = this.auctions.set(a.uuid, new Auction(a));
                 this.emit('auctionCreated', a.uuid, a);
             } else {
-                if (!isEqual(auction.bids, a.bids)) auction.setBids(a.bids);
-                if (auction.highest_bid_amount !== a.highest_bid_amount) auction.setHighestBid(a.highest_bid_amount);
+                if (!isEqual(auction.bids, a.bids)) {
+                    auction.setHighestBid(a.highest_bid_amount);
+                    auction.setBids(a.bids);
 
-                this.emit('auctionUpdate', a.uuid, a);
+                    this.emit('auctionUpdate', a.uuid, a);
+                }
             }
         });
-    }
-
-    async fetchAuctions() {
-        for (let i = 0; i <= this.auctionPages; i++) {
-            const auctionPage = await this.hypixelApi.getAuctions(i);
-            if (!auctionPage.success) continue;
-
-            this.auctionPages = auctionPage.totalPages;
-
-            this.processAuction(auctionPage);
-        };
-
-        this.checkAuctions();
     }
 
     get allItems() {
@@ -63,7 +50,7 @@ class HypixelAuctions extends EventEmitter {
             const isEnded = a.checkEnded();
             if (!isEnded) return;
 
-            new this.db.auction({_id: a.uuid, auctioneer: a.auctioneer, coop: a.coop, start: a.start, end: a.end, name: a.item_name, lore: a.item_lore, extra: a.extra, category: a.category, tier: a.tier, startBid: a.starting_bid, itemBytes: a.item_bytes, highestBid: a.highest_bid_amount, bidders: a.bids});
+            new this.db.auction({_id: a.uuid, auctioneer: a.auctioneer, coop: a.coop, start: a.start, end: a.end, item_name: a.item_name, item_lore: a.item_lore, extra: a.extra, category: a.category, tier: a.tier, starting_bid: a.starting_bid, item_bytes: a.item_bytes, highest_bid_amount: a.highest_bid_amount, bids: a.bids});
         });
     }
 }

@@ -1,7 +1,7 @@
 const Server = require('./Server');
-const Auctions = require('./handlers/UserConnections');
-
 const server = new Server();
-const auctions = new Auctions();
+const UserConnections = require('./handlers/UserConnections');
+
+const connections = new UserConnections();
 
 server.start();

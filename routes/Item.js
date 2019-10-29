@@ -9,9 +9,9 @@ router.get('/items', async (req, res) => {
     res.json({success: true, data: allItems});
 });
 
-router.get('/items/:id', async (req, res) => {
-    const id = req.params.id;
-    const item = await db.item.findById(id);
+router.get('/items/:name', async (req, res) => {
+    const name = req.params.name;
+    const item = await db.item.findOne({name});
     if (!item) return res.json({success: false});
 
     res.json({success: true, data: item});

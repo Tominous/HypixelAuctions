@@ -8,6 +8,8 @@ class Mongo {
         this.auction = require('./models/Auction');
         this.item = require('./models/Item');
         this.user = require('./models/User');
+        this.island = require('./models/Island');
+        this.hypixelUser = require('./models/HypixelUser');
     }
 }
 

@@ -7,13 +7,14 @@ const PLAYER_ROUTE = HYPIXEL_API + "/player";
 const PROFILE_ROUTE = HYPIXEL_API + "/skyblock/profile";
 
 class Hypixel {
-    constructor(token) {
-        this.token = token;
+    constructor(token1, token2) {
+        this.auctionToken = token1;
+        this.userToken = token2;
     }
 
     async getAuctions(page=0) {
         const url = new URL(AUCTIONS_ROUTE);
-        url.searchParams.append('key', this.token);
+        url.searchParams.append('key', this.auctionToken);
         url.searchParams.append('page', page);
 
         const response = await fetch(url);
@@ -24,7 +25,7 @@ class Hypixel {
 
     async getUser(uuid) {
         const url = new URL(PLAYER_ROUTE);
-        url.searchParams.append('key', this.token);
+        url.searchParams.append('key', this.userToken);
         url.searchParams.append('uuid', uuid);
 
         const response = await fetch(url);
@@ -35,7 +36,7 @@ class Hypixel {
 
     async getIsland(uuid) {
         const url = new URL(PROFILE_ROUTE);
-        url.searchParams.append('key', this.token);
+        url.searchParams.append('key', this.userToken);
         url.searchParams.append('profile', uuid);
 
         const response = await fetch(url);
@@ -46,7 +47,7 @@ class Hypixel {
 
     async getAuction(uuid) {
         const url = new URL(AUCTION_ROUTE);
-        url.searchParams.append('key', this.token);
+        url.searchParams.append('key', this.auctionToken);
         url.searchParams.append('uuid', uuid);
 
         const response = await fetch(url);

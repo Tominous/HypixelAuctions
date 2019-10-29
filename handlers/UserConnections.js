@@ -1,76 +1,81 @@
-const Server = require('ws').Server;
+const ws = require('ws');
+const { EventEmitter } = require('events');
 const config = require('../config');
 const HypixelAuctions = require('./HypixelAuctions');
-const wss = new Server({port: config.ws_port});
+const wss = new ws.Server({ port: config.ws_port });
 const jwt = require('jsonwebtoken');
 const Database = require('../storage/Mongo');
 const User = require('../types/User');
 const db = new Database();
 
-class UserConnections {
+class UserConnections extends EventEmitter {
     constructor() {
+        super();
+
         this.connections = new Map();
         this.auctionHandler = new HypixelAuctions();
-        this.auctionHandler.init();
 
-        wss.on('listening', () => console.log(`WS listening on port ${config.ws_port}`));      
+        wss.on('listening', () => console.log(`WS listening on port ${config.ws_port}`));
         wss.on('connection', socket => this.handleLogin(socket));
+        this.auctionHandler.on('auctionCreated', (id, auction) => this.processCreated(id, auction));
+        this.auctionHandler.on('auctionUpdated', (id, auction) => this.processUpdate(id, auction));
         setInterval(() => this.dumpDeadConnections(), 1000);
-
-        this.auctionHandler.on('auctionCreated', (id, auction) => this.broadcastMessage(1, auction));
-        this.auctionHandler.on('auctionUpdate', (id, auction) => this.handleAuctionUpdate(id, 2, auction));
     }
 
-    handleAuctionUpdate(id, op, msg) {
-        const userArray = Array.from(this.connections);
+    processCreated(id, auction) {
+        this.connections.forEach(user => user.handleAuctionCreated(id, auction));
+    }
 
-        userArray.filter(user => {
-            const userData = user[1];
-
-            if (userData.watchingAuctions.has(id)) this.sendMessage(userData.ws, op, msg);
-        });
+    processUpdate(id, auction) {
+        this.connections.forEach(user => user.handleAuctionUpdate(id, auction));
     }
 
     sendMessage(sock, op, msg) {
-        sock.ws.send(JSON.stringify({op, data: msg}));
+        sock.ws.send(JSON.stringify({ op, data: msg }));
     }
 
     broadcastMessage(op, msg) {
-        this.connections.forEach(c => c.ws.send(JSON.stringify({op, data: msg})));
+        this.connections.forEach(c => c.ws.send(JSON.stringify({ op, data: msg })));
     }
 
     parseMessage(msg) {
         try {
             return JSON.parse(msg);
-        } catch (e) { 
+        } catch (e) {
             return {};
         }
     }
 
-    handleLogin(socket) {
-        socket.send(JSON.stringify({op: 0}));
+    async handleLogin(socket) {
+        this.setMaxListeners(this.connections.size + 1);
+        socket.send(JSON.stringify({ op: 0 }));
 
-        socket.once('message', msg => {
+        socket.once('message', async msg => {
+            let token;
             const data = this.parseMessage(msg);
             if (data.op !== 0) return socket.close();
 
-            const token = jwt.verify(data.token, config.secret);
-            const dbData = db.user.findById(token.id);
+            try {
+                token = jwt.verify(data.token, config.secret);
+            } catch (e) {
+                socket.send(JSON.stringify({ op: 1, success: false, message: "Invalid Token" }));
+                return socket.close();
+            }
+
+            let dbData = await db.user.findById(token.id);
             if (!dbData) return socket.close();
+            dbData.password = undefined;
 
-            this.connections.set(dbData._id, new User(dbData._id, dbData, socket));
-
-            socket.emit('authed', dbData);
-
-            return;
+            this.connections.set(dbData._id, new User(dbData._id, dbData, socket, db));
+            socket.send(JSON.stringify({ op: 1, success: true, data: dbData }));
         });
-        
-        socket.once('close', () => {return;});
+
+        socket.once('close', () => { return; });
     }
 
     dumpDeadConnections() {
         this.connections.forEach(connection => {
-            if (connection.ws.readyState === WebSocket.CLOSED || WebSocket.CLOSING) this.connections.delete(connection.id); 
+            if (connection.ws.readyState !== 1) this.connections.delete(connection.id);
         });
     }
 }
