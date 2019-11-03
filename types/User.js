@@ -1,3 +1,6 @@
+const btoa = str => Buffer.from(str).toString('base64');
+const atob = b64Encoded => Buffer.from(b64Encoded, 'base64').toString('utf8');
+
 class User {
     constructor(id, data, ws, db) {
         this.id = id;
@@ -24,7 +27,8 @@ class User {
     }
 
     async handleMessage(msg) {
-        const data = this.parseMessage(msg.data);
+        const decoded = atob(msg.data);
+        const data = this.parseMessage(decoded);
 
         switch (data.op) {
             case this.USER_DATA:
@@ -49,7 +53,7 @@ class User {
     }
 
     sendMessage(op, msg) {
-        this.ws.send(JSON.stringify({ op, data: msg }));
+        this.ws.send(btoa(JSON.stringify({ op, data: msg })));
     }
 }
 

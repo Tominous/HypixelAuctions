@@ -4,7 +4,7 @@ const cors = require('cors');
 const Users = require('./routes/Users');
 const Auctions = require('./routes/Auctions');
 const Items = require('./routes/Item');
-const Islands = require('./routes/Islands');
+const Settings = require('./routes/Settings');
 
 class Server {
     constructor() {
@@ -24,7 +24,8 @@ class Server {
         this.app.use('/api', Users);
         this.app.use('/api', Auctions);
         this.app.use('/api', Items);
-        this.app.use('/api', Islands);
+        this.app.use('/api', Settings);
+        //this.app.use('/api', Islands); planning on adding api token requirement in settings
     }
  
     start() {

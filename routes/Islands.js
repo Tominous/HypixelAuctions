@@ -18,26 +18,29 @@ router.get('/islands/:id', async (req, res) => {
     const id = req.params.id;
     let islandData = await db.island.findById(id);
 
+    if (islandData) return res.json({success: true, data: islandData});
     if (!islandData) islandData = await Hypixel.getIsland(id);
     if (!islandData) return res.status(404).json({success: false, message: "No island found."});
+    if (!islandData.success) return res.status(429).json({success: false, message: "Ratelimited"});
 
-    await new db.island({_id: islandData.profile.uuid, members: islandData.profile.members }).save();
+    const data = await new db.island({_id: id, members: islandData.profile.members }).save();
 
-    res.json({success: true, data: islandData});
+    res.json({success: true, data});
 });
 
 router.get('/islands/members/:id', async (req, res) => {
     const id = req.params.id;
     let userData = await db.hypixelUser.findById(id);
     
+    if (userData) return res.json({success: true, data: userData});
     if (!userData) userData = await Hypixel.getUser(id);
     if (!userData) return res.status(404).json({success: false, message: "No island found."});
+    if (!userData.success) return res.status(429).json({success: false, message: "Ratelimited"}); 
 
     const playerIsland = userData.player.stats.SkyBlock.profiles;
+    const data = await new db.hypixelUser({_id: userData.player.uuid, playername: userData.player.playername, displayname: userData.player.displayname, islands: playerIsland}).save();
 
-    await new db.hypixelUser({_id: userData.uuid, playername: userData.player.playername, displayname: userData.player.displayname, islands: playerIsland}).save();
-
-    res.json({success: true, data: userData.player});
+    res.json({success: true, data});
 });
 
 module.exports = router;

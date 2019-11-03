@@ -8,6 +8,9 @@ const Database = require('../storage/Mongo');
 const User = require('../types/User');
 const db = new Database();
 
+const btoa = str => Buffer.from(str).toString('base64');
+const atob = b64Encoded => Buffer.from(b64Encoded, 'base64').toString('utf8');
+
 class UserConnections extends EventEmitter {
     constructor() {
         super();
@@ -47,18 +50,18 @@ class UserConnections extends EventEmitter {
     }
 
     async handleLogin(socket) {
-        this.setMaxListeners(this.connections.size + 1);
-        socket.send(JSON.stringify({ op: 0 }));
+        socket.send(btoa(JSON.stringify({ op: 0 })));
 
         socket.once('message', async msg => {
             let token;
-            const data = this.parseMessage(msg);
+            const decoded = atob(msg);
+            const data = this.parseMessage(decoded);
             if (data.op !== 0) return socket.close();
 
             try {
                 token = jwt.verify(data.token, config.secret);
             } catch (e) {
-                socket.send(JSON.stringify({ op: 1, success: false, message: "Invalid Token" }));
+                socket.send(btoa(JSON.stringify({ op: 1, success: false, message: "Invalid Token" })));
                 return socket.close();
             }
 
@@ -67,7 +70,7 @@ class UserConnections extends EventEmitter {
             dbData.password = undefined;
 
             this.connections.set(dbData._id, new User(dbData._id, dbData, socket, db));
-            socket.send(JSON.stringify({ op: 1, success: true, data: dbData }));
+            socket.send(btoa(JSON.stringify({ op: 1, success: true, data: dbData })));
         });
 
         socket.once('close', () => { return; });

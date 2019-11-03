@@ -23,7 +23,7 @@ router.post('/users/login', async (req, res) => {
     if (!data.username) return res.status(400).json({ success: false, message: "You must provide a username." });
     if (!data.password) return res.status(400).json({ success: false, message: "You must provide a password." });
 
-    const dbData = await db.user.findById(data.username);
+    const dbData = await db.user.findOne({ username: data.username });
     if (!dbData) return res.status(404).json({ success: false, message: "User not found." });
     if (dbData.password !== data.password) return res.status(401).json({ success: false, message: "Incorrect password." });
 
@@ -37,10 +37,10 @@ router.post('/users/signup', async (req, res) => {
     if (!data.username) return res.status(400).json({ success: false, message: "You must provide a username." });
     if (!data.password) return res.status(400).json({ success: false, message: "You must provide a password." });
 
-    const dbData = await db.user.findById(data.username);
+    const dbData = await db.user.findOne({ username: data.username });
     if (dbData) return res.status(400).json({ success: false, message: "Username already exists." });
 
-    const createdUser = await new db.user({ _id: data.username, password: data.password }).save();
+    const createdUser = await new db.user({ username: data.username, password: data.password }).save();
     const token = jwt.sign({ id: createdUser._id }, config.secret);
 
     res.json({ success: true, token });
