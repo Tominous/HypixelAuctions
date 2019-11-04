@@ -30,6 +30,12 @@ const fetchAuctions = async () => {
     };
 };
 
+setInterval(() => {
+    auctionList.forEach(a => {
+        if (a.end <= Date.now()) return auctionList.delete(a.uuid);
+    })
+});
+
 setInterval(() => fetchAuctions(), 20000);
 
 module.exports = { emitter, auctionList };
