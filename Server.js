@@ -9,7 +9,7 @@ const Settings = require('./routes/Settings');
 class Server {
     constructor() {
         this.app = express();
-        this.config(); 
+        this.config();
         this.routes();
     }
 
@@ -27,9 +27,9 @@ class Server {
         this.app.use('/api', Settings);
         //this.app.use('/api', Islands); planning on adding api token requirement in settings
     }
- 
+
     start() {
-        this.app.listen(this.app.get('port'), () => console.log(`HTTP running on port ${this.app.get('port')}`)); 
+        this.app.listen(this.app.get('port'), () => console.log(`HTTP running on port ${this.app.get('port')}`));
     }
 }
 
