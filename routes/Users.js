@@ -51,18 +51,64 @@ router.get('/users/@me', async (req, res) => {
     let decoded;
 
     try {
-        decoded = jwt.decode(req.headers.authorization);
+        decoded = jwt.verify(req.headers.authorization, config.secret);
     } catch (e) {
         return res.status(401).json({success: false, message: "Invalid token."});
     }
     
     if (!decoded.id) return res.status(401).json({success: false, message: "Invalid token."});
 
-    let dbData = db.user.findById(decoded.id);
+    let dbData = await db.user.findById(decoded.id);
     if (!dbData) return res.status(500).json({success: false, message: "There was a problem getting user data."});
 
     delete dbData.password;
     res.json({success: true, data: dbData});
+});
+
+router.post('/users/auctions/:id', async (req, res) => {
+    if (!req.headers.authorization) return res.status(401).json({success: false, message: "No authorization provided."});
+    if (!req.params.id) return res.status(400).json({success: false, message: "No id provided."});
+    let decoded;
+
+    try {
+        decoded = jwt.verify(req.headers.authorization, config.secret);
+    } catch (e) {
+        return res.status(401).json({success: false, message: "Invalid token."});
+    }
+
+    if (!decoded.id) return res.status(401).json({success: false, message: "Invalid token."});
+
+    const dbData = await db.user.findById(decoded.id);
+    if (!dbData) return res.status(500).json({success: false, message: "Something went wrong."});
+
+    db.user.findByIdAndUpdate(decoded.id, { $push: { watchingAuctions: req.params.id } }, (err, doc) => {
+        if (err) return res.status(500).json({success: false, message: "Something went wrong."});
+
+        res.json({success: true, message: "Successfully updated."});
+    });
+});
+
+router.delete('/users/auctions/:id', async (req, res) => {
+    if (!req.headers.authorization) return res.status(401).json({success: false, message: "No authorization provided."});
+    if (!req.params.id) return res.status(400).json({success: false, message: "No id provided."});
+    let decoded;
+
+    try {
+        decoded = jwt.verify(req.headers.authorization, config.secret);
+    } catch (e) {
+        return res.status(401).json({success: false, message: "Invalid token."});
+    }
+
+    if (!decoded.id) return res.status(401).json({success: false, message: "Invalid token."});
+
+    const dbData = await db.user.findById(decoded.id);
+    if (!dbData) return res.status(500).json({success: false, message: "Something went wrong."});
+
+    db.user.findByIdAndUpdate(decoded.id, { $pull: { watchingAuctions: req.params.id } }, (err, doc) => {
+        if (err) return res.status(500).json({success: false, message: "Something went wrong."});
+
+        res.json({success: true, message: "Successfully updated."});
+    });
 });
 
 module.exports = router;

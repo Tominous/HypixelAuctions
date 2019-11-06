@@ -36,6 +36,6 @@ setInterval(() => {
     })
 });
 
-setInterval(() => fetchAuctions(), 20000);
+setInterval(() => fetchAuctions(), 30000);
 
 module.exports = { emitter, auctionList };
