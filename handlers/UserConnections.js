@@ -2,11 +2,12 @@ const ws = require('ws');
 const { EventEmitter } = require('events');
 const config = require('../config');
 const HypixelAuctions = require('./HypixelAuctions');
-const wss = new ws.Server({ port: config.ws_port });
 const jwt = require('jsonwebtoken');
 const Database = require('../storage/Mongo');
 const User = require('../types/User');
 const db = new Database();
+const webServer = require('./Server');
+const http = require('http');
 
 const btoa = str => Buffer.from(str).toString('base64');
 const atob = b64Encoded => Buffer.from(b64Encoded, 'base64').toString('utf8');
@@ -17,9 +18,15 @@ class UserConnections extends EventEmitter {
 
         this.connections = new Map();
         this.auctionHandler = new HypixelAuctions();
+        this.webServer = new webServer();
 
-        wss.on('listening', () => console.log(`WS listening on port ${config.ws_port}`));
-        wss.on('connection', socket => this.handleLogin(socket));
+        this.httpServer = http.createServer(this.webServer.app);
+
+        this.httpServer.listen(config.http_port);
+        this.wss = new ws.Server({ server: this.httpServer, path: '/gateway' });
+        
+        this.wss.on('listening', () => console.log(`WS listening on port ${config.http_port}`));
+        this.wss.on('connection', socket => this.handleLogin(socket));
         this.auctionHandler.on('auctionCreated', (id, auction) => this.processCreated(id, auction));
         this.auctionHandler.on('auctionUpdated', (id, auction) => this.processUpdate(id, auction));
         setInterval(() => this.dumpDeadConnections(), 1000);
@@ -65,9 +72,13 @@ class UserConnections extends EventEmitter {
                 return socket.close();
             }
 
-            let dbData = await db.user.findById(token.id);
-            if (!dbData) return socket.close();
-            dbData.password = undefined;
+            let dbData = await db.user.findById(token.user.id);
+            if (!dbData) await new db.user({ _id: token.user.id, watchingAuctions: [], watchingItems: [], watchingIslands: [], settings: {} }).save((err, res) => {
+                if (err) return socket.close();
+
+                this.connections.set(res._id, new User(res._id, res, socket, db));
+                return socket.send(btoa(JSON.stringify({ op: 1, success: true, data: res })));
+            });
 
             this.connections.set(dbData._id, new User(dbData._id, dbData, socket, db));
             socket.send(btoa(JSON.stringify({ op: 1, success: true, data: dbData })));

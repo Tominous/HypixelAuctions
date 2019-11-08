@@ -2,48 +2,18 @@ const router = require('express').Router();
 const config = require('../config.json');
 const Database = require('../storage/Mongo');
 const HypixelAPI = require('../handlers/Hypixel');
+const { Client, types: { AUTHORIZATION } } = require('discord-oauth');
 const jwt = require('jsonwebtoken');
 const Hypixel = new HypixelAPI(config.auctionToken, config.userToken);
 const db = new Database();
+const { getUserData, setUserData } = require('../storage/Redis');
+const fetch = require('node-fetch');
 
-router.get('/users/:id', async (req, res) => {
-    const id = req.params.id;
-    let hypixelUser;
-
-    const userDb = await db.users.findById(id);
-    if (!userDb) hypixelUser = Hypixel.getUser(id);
-
-    if (!hypixelUser && !userDb) return res.status(404).json({ success: false, message: "No user found." });
-
-    res.json({ success: true, data: userDb });
-});
-
-router.post('/users/login', async (req, res) => {
-    const data = req.body;
-    if (!data.username) return res.status(400).json({ success: false, message: "You must provide a username." });
-    if (!data.password) return res.status(400).json({ success: false, message: "You must provide a password." });
-
-    const dbData = await db.user.findOne({ username: data.username });
-    if (!dbData) return res.status(404).json({ success: false, message: "User not found." });
-    if (dbData.password !== data.password) return res.status(401).json({ success: false, message: "Incorrect password." });
-
-    const token = jwt.sign({ id: dbData._id }, config.secret);
-
-    res.json({ success: true, token });
-});
-
-router.post('/users/signup', async (req, res) => {
-    const data = req.body;
-    if (!data.username) return res.status(400).json({ success: false, message: "You must provide a username." });
-    if (!data.password) return res.status(400).json({ success: false, message: "You must provide a password." });
-
-    const dbData = await db.user.findOne({ username: data.username });
-    if (dbData) return res.status(400).json({ success: false, message: "Username already exists." });
-
-    const createdUser = await new db.user({ username: data.username, password: data.password }).save();
-    const token = jwt.sign({ id: createdUser._id }, config.secret);
-
-    res.json({ success: true, token });
+const oauthClient = new Client(config.id, config.auth_secret);
+const auth = oauthClient.create(AUTHORIZATION, {
+    scopes: ['identify'],
+    redirect: config.callback_url,
+    returnUrl: config.return_url
 });
 
 router.get('/users/@me', async (req, res) => {
@@ -56,9 +26,9 @@ router.get('/users/@me', async (req, res) => {
         return res.status(401).json({success: false, message: "Invalid token."});
     }
     
-    if (!decoded.id) return res.status(401).json({success: false, message: "Invalid token."});
+    if (!decoded.user.id) return res.status(401).json({success: false, message: "Invalid token."});
 
-    let dbData = await db.user.findById(decoded.id);
+    let dbData = await db.user.findById(decoded.user.id);
     if (!dbData) return res.status(500).json({success: false, message: "There was a problem getting user data."});
 
     delete dbData.password;
@@ -76,12 +46,12 @@ router.post('/users/auctions/:id', async (req, res) => {
         return res.status(401).json({success: false, message: "Invalid token."});
     }
 
-    if (!decoded.id) return res.status(401).json({success: false, message: "Invalid token."});
+    if (!decoded.user.id) return res.status(401).json({success: false, message: "Invalid token."});
 
-    const dbData = await db.user.findById(decoded.id);
+    const dbData = await db.user.findById(decoded.user.id);
     if (!dbData) return res.status(500).json({success: false, message: "Something went wrong."});
 
-    db.user.findByIdAndUpdate(decoded.id, { $push: { watchingAuctions: req.params.id } }, (err, doc) => {
+    db.user.findByIdAndUpdate(decoded.user.id, { $push: { watchingAuctions: req.params.id } }, (err, doc) => {
         if (err) return res.status(500).json({success: false, message: "Something went wrong."});
 
         res.json({success: true, message: "Successfully updated."});
@@ -99,16 +69,55 @@ router.delete('/users/auctions/:id', async (req, res) => {
         return res.status(401).json({success: false, message: "Invalid token."});
     }
 
-    if (!decoded.id) return res.status(401).json({success: false, message: "Invalid token."});
+    if (!decoded.user.id) return res.status(401).json({success: false, message: "Invalid token."});
 
-    const dbData = await db.user.findById(decoded.id);
+    const dbData = await db.user.findById(decoded.user.id);
     if (!dbData) return res.status(500).json({success: false, message: "Something went wrong."});
 
-    db.user.findByIdAndUpdate(decoded.id, { $pull: { watchingAuctions: req.params.id } }, (err, doc) => {
+    db.user.findByIdAndUpdate(decoded.user.id, { $pull: { watchingAuctions: req.params.id } }, (err, doc) => {
         if (err) return res.status(500).json({success: false, message: "Something went wrong."});
 
         res.json({success: true, message: "Successfully updated."});
     });
+});
+
+router.get('/users/mojang/:id', async (req, res) => {
+    const id = req.params.id;
+    if (!req.headers.authorization) return res.status(401).json({success: false, message: "No authorization provided."});
+
+    let decoded;
+
+    try {
+        decoded = jwt.verify(req.headers.authorization, config.secret);
+    } catch (e) {
+        return res.status(401).json({success: false, message: "Invalid token."});
+    }
+
+    if (!decoded.user.id) return res.status(401).json({success: false, message: "Invalid token."});
+
+    const userData = await getUserData(id);
+
+    if (userData) return res.json({success: true, data: userData});
+
+    const response = await fetch(`https://sessionserver.mojang.com/session/minecraft/profile/${id}`);
+    const data = await response.json();
+
+    if (data.error) return res.json({success: false});
+
+    await setUserData(data.id, data);
+    res.json({success: true, data});
+});
+
+router.get('/users/login', (req, res) => {
+    const url = auth.generate().url;
+    res.redirect(url + "&prompt=none");
+});
+
+router.get('/users/callback', async (req, res) => {
+    const data = await auth.callback(req.query);
+    const auth_token = jwt.sign({ user: data.bearer.user }, config.secret);
+
+    res.redirect(`https://auctions.craftlink.xyz/auth?token=${auth_token}`);
 });
 
 module.exports = router;

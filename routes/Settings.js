@@ -14,9 +14,9 @@ router.get('/settings', async (req, res) => {
         return res.status(401).json({success: false, message: "Invalid token."});
     }
 
-    if (!decoded.id) return res.status(401).json({success: false, message: "Invalid token."});
+    if (!decoded.user.id) return res.status(401).json({success: false, message: "Invalid token."});
 
-    let userData = await db.user.findById(decoded.id);
+    let userData = await db.user.findById(decoded.user.id);
     if (!userData) return res.status(401).json({success: false, message: "Invalid token."});
     userData.password = undefined;
 
@@ -34,12 +34,12 @@ router.post('/settings', async (req, res) => {
         return res.status(401).json({success: false, message: "Invalid token."});
     }
 
-    if (!decoded.id) return res.status(401).json({success: false, message: "Invalid token."});
+    if (!decoded.user.id) return res.status(401).json({success: false, message: "Invalid token."});
 
-    let userData = await db.user.findById(decoded.id);
+    let userData = await db.user.findById(decoded.user.id);
     if (!userData) return res.status(401).json({success: false, message: "Invalid token."});
 
-    let updateData = await db.user.findByIdAndUpdate(decoded.id, { $set: {settings: data} });
+    let updateData = await db.user.findByIdAndUpdate(decoded.user.id, { $set: {settings: data} });
     updateData.password = undefined;
 
     res.json({success: true, data: updateData});

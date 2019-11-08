@@ -54,14 +54,12 @@ router.get('/auctions/:id', async (req, res) => {
     const auctionId = req.params.id;
     let hypixelAuction;
 
-    const auctionDb = await db.auction.findById(auctionId);
+    hypixelAuction = await db.auction.findById(auctionId);
 
-    if (!auctionDb) hypixelAuction = await Hypixel.getAuction(auctionId);
-    if (!hypixelAuction.auctions.length) return res.status(404).json({ success: false, message: "No auction found!" });
+    if (!hypixelAuction) hypixelAuction = auctionList.get(auctionId);
+    if (!hypixelAuction) return res.status(404).json({ success: false, message: "No auction found!" });
 
-    if (hypixelAuction) return res.json({ success: true, data: hypixelAuction.auctions[0] });
-
-    res.json({ success: true, data: auctionDb });
+    res.json({ success: true, data: hypixelAuction });
 });
 
 module.exports = router;

@@ -25,6 +25,14 @@ class Auction extends EventEmitter {
         };
     }
 
+    get item_bytes() {
+        return this.auction.item_bytes;
+    }
+
+    get item_name() {
+        return this.auction.item_name;
+    }
+
     get coop() {
         return this.auction.coop;
     }

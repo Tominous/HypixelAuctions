@@ -32,7 +32,10 @@ class Item {
     }
 
     async getIcon() {
-        return await items.get(this.parseItem().Id.value).icon;
+        const data = await this.parseItem();
+        if (!data) return items.get(166).icon;
+
+        return items.get(data.id.value).icon;
     }
 
     async getID() {
@@ -40,7 +43,10 @@ class Item {
     }
 
     async getSize() {
-        return await this.parseItem().Count.value;
+        const data = await this.parseItem();
+        if (!data) return 1;
+
+        return data.Count.value;
     }
 }
 

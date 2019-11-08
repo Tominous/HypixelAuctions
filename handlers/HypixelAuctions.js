@@ -41,6 +41,15 @@ class HypixelAuctions extends EventEmitter {
         });
     }
 
+    async updateItem(item, price, lore) {
+        let itemData = await this.db.item.findOne({ name: item.getName() });
+        if (!itemData) itemData = await new this.db.item({ name: item.getName(), picture: await item.getIcon() || "", item_lore: lore }).save();
+
+        this.db.item.findOneAndUpdate({ name: item.getName() }, { $push: { pastPrices: { date: Date.now(), price, amount: await item.getSize() } }, $set: { item_lore: lore } }, (err, res) => {
+
+        });
+    }
+
     get allItems() {
         return this.auctions.forEach(a => a.getItem());
     }
@@ -51,7 +60,11 @@ class HypixelAuctions extends EventEmitter {
             if (!isEnded) return;
 
             if (await this.db.auction.findById(a.id)) return;
-            new this.db.auction({_id: a.id, auctioneer: a.auctioneer, coop: a.coop, start: a.start, end: a.end, item_name: a.item_name, item_lore: a.item_lore, extra: a.extra, category: a.category, tier: a.tier, starting_bid: a.starting_bid, item_bytes: a.item_bytes, highest_bid_amount: a.highest_bid_amount, bids: a.bids}).save();
+            new this.db.auction({ _id: a.id, auctioneer: a.auctioneer, coop: a.coop, start: a.start, end: a.end, item_name: a.item_name, item_lore: a.item_lore, extra: a.extra, category: a.category, tier: a.tier, starting_bid: a.startingBid, item_bytes: a.item_bytes, highest_bid_amount: a.highestBid, bids: a.bids }).save();
+
+            if (a.bids.length > 0) this.updateItem(a.item, a.highestBid, a.auction.item_lore);
+
+            return;
         });
     }
 }
