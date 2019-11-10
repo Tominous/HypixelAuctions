@@ -3,8 +3,13 @@ const config = require('../config.json');
 const Database = require('../storage/Mongo');
 const jwt = require('jsonwebtoken');
 const db = new Database();
+const io = require('@pm2/io');
+const counter = io.counter({ name: "Settings Route Active Handles" });
 
 router.get('/settings', async (req, res) => {
+    counter.inc();
+    req.on('end', () => counter.dec());
+
     if (!req.headers.authorization) return res.status(401).json({success: false, message: "No token provided."});
 
     let decoded;
@@ -24,6 +29,9 @@ router.get('/settings', async (req, res) => {
 });
 
 router.post('/settings', async (req, res) => {
+    counter.inc();
+    req.on('end', () => counter.dec());
+
     const data = req.body;
     if (!req.headers.authorization) return res.status(401).json({success: false, message: "No token provided."});
 

@@ -8,6 +8,8 @@ const User = require('../types/User');
 const db = new Database();
 const webServer = require('./Server');
 const http = require('http');
+const io = require('@pm2/io');
+const counter = io.counter({ name: "Live Auction Connections" });
 
 const btoa = str => Buffer.from(str).toString('base64');
 const atob = b64Encoded => Buffer.from(b64Encoded, 'base64').toString('utf8');
@@ -24,12 +26,13 @@ class UserConnections extends EventEmitter {
 
         this.httpServer.listen(config.http_port);
         this.wss = new ws.Server({ server: this.httpServer, path: '/gateway' });
-        
+
         this.wss.on('listening', () => console.log(`WS listening on port ${config.http_port}`));
         this.wss.on('connection', socket => this.handleLogin(socket));
         this.auctionHandler.on('auctionCreated', (id, auction) => this.processCreated(id, auction));
         this.auctionHandler.on('auctionUpdated', (id, auction) => this.processUpdate(id, auction));
-        setInterval(() => this.dumpDeadConnections(), 1000);
+        setInterval(() => this.dumpDeadConnections());
+        setInterval(() => this.broadcastMessage(9, {keepAlive: true}), 10000);
     }
 
     processCreated(id, auction) {
@@ -45,7 +48,7 @@ class UserConnections extends EventEmitter {
     }
 
     broadcastMessage(op, msg) {
-        this.connections.forEach(c => c.ws.send(JSON.stringify({ op, data: msg })));
+        this.connections.forEach(c => c.ws.send(btoa(JSON.stringify({ op, data: msg || undefined }))));
     }
 
     parseMessage(msg) {
@@ -73,6 +76,7 @@ class UserConnections extends EventEmitter {
             }
 
             let dbData = await db.user.findById(token.user.id);
+            counter.inc();
             if (!dbData) await new db.user({ _id: token.user.id, watchingAuctions: [], watchingItems: [], watchingIslands: [], settings: {} }).save((err, res) => {
                 if (err) return socket.close();
 
@@ -89,7 +93,11 @@ class UserConnections extends EventEmitter {
 
     dumpDeadConnections() {
         this.connections.forEach(connection => {
-            if (connection.ws.readyState !== 1) this.connections.delete(connection.id);
+            if (connection.ws.readyState !== 1) {
+                console.log('discoonected')
+                this.connections.delete(connection.id);
+                counter.dec();
+            }
         });
     }
 }

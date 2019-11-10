@@ -1,12 +1,14 @@
 const router = require('express').Router();
-const config = require('../config.json');
 const Database = require('../storage/Mongo');
-const HypixelAPI = require('../handlers/Hypixel');
 const { auctionList } = require('../handlers/AuctionCache');
-const Hypixel = new HypixelAPI(config.auctionToken, config.userToken);
 const db = new Database();
+const io = require('@pm2/io');
+const counter = io.counter({ name: "Auctions Route Active Handles" });
 
 router.get('/auctions', async (req, res) => {
+    counter.inc();
+    req.on('end', () => counter.dec());
+    
     const auctions = auctionList;
     const filters = JSON.parse(decodeURI(req.query.filters));
     const itemsPerPage = req.query.items || 10;
@@ -51,6 +53,9 @@ router.get('/auctions', async (req, res) => {
 });
 
 router.get('/auctions/:id', async (req, res) => {
+    counter.inc();
+    req.on('end', () => counter.dec());
+
     const auctionId = req.params.id;
     let hypixelAuction;
 

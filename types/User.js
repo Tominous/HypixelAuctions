@@ -16,6 +16,7 @@ class User {
         this.AUCTION_CREATED = 5;
         this.AUCTION_UPDATED = 6;
         this.USER_DATA = 8;
+        this.PING = 9;
     }
 
     parseMessage(msg) {

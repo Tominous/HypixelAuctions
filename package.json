@@ -4,11 +4,13 @@
   "description": "A backend that interacts with the hypixel api.",
   "main": "index.js",
   "dependencies": {
+    "@pm2/io": "^4.3.2",
     "atob": "^2.1.2",
     "cors": "^2.8.5",
     "discord-oauth": "^1.0.3",
     "express": "^4.17.1",
     "express-graphql": "^0.9.0",
+    "express-rate-limit": "^5.0.0",
     "graphql": "^14.5.8",
     "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.15",
