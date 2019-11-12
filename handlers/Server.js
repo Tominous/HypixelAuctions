@@ -7,18 +7,18 @@ const Settings = require('../routes/Settings');
 const rateLimit = require("express-rate-limit");
 
 const itemLimit = rateLimit({
-    windowMs: 15 * 60 * 1000,
+    windowMs: 10 * 60 * 1000,
     max: 500
 });
 
 const auctionLimit = rateLimit({
-    windowMs: 15 * 60 * 1000,
+    windowMs: 5 * 60 * 1000,
     max: 100
 });
 
 const userLimit = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 20
+    windowMs: 10 * 60 * 1000,
+    max: 60
 });
 
 class Server {

@@ -21,7 +21,7 @@ class HypixelAuctions extends EventEmitter {
 
         auctionCache.on('auctionPage', auctionData => this.processAuction(auctionData));
 
-        setInterval(() => this.checkAuctions(), 10000);
+        setInterval(() => this.checkAuctions(), 2000);
     }
 
     async processAuction(auctionPage) {
@@ -46,7 +46,7 @@ class HypixelAuctions extends EventEmitter {
         if (!itemData) itemData = await new this.db.item({ name: item.getName(), picture: await item.getIcon() || "", item_lore: lore }).save();
 
         this.db.item.findOneAndUpdate({ name: item.getName() }, { $push: { pastPrices: { date: Date.now(), price, amount: await item.getSize() } }, $set: { item_lore: lore } }, (err, res) => {
-            
+
         });
     }
 
@@ -58,12 +58,8 @@ class HypixelAuctions extends EventEmitter {
         this.auctions.forEach(async a => {
             const isEnded = a.checkEnded();
             if (!isEnded) return;
-
-            if (await this.db.auction.findById(a.id)) return;
-            new this.db.auction({ _id: a.id, auctioneer: a.auctioneer, coop: a.coop, start: a.start, end: a.end, item_name: a.item_name, item_lore: a.item_lore, extra: a.extra, category: a.category, tier: a.tier, starting_bid: a.startingBid, item_bytes: a.item_bytes, highest_bid_amount: a.highestBid, bids: a.bids }).save();
-
+            this.auctions.delete(a.id);
             if (a.bids.length > 0) this.updateItem(a.item, a.highestBid, a.auction.item_lore);
-
             return;
         });
     }
