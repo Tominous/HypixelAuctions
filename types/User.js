@@ -7,8 +7,8 @@ class User {
         this.user = data;
         this.db = db;
 
-        this.watchingAuctions = ["851d734de600469eac2abb7e38cbd8da", "b6dc2e67a94e4648a7855c45454b4995"];
-        this.watchingItems = ["Spicy Aspect of the End Diamond Sword"];
+        this.watchingAuctions = [];
+        this.watchingItems = [];
         this.ws = ws;
 
         this.ws.onmessage = msg => this.handleMessage(msg);
