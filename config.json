@@ -1,7 +1,11 @@
 {
-    "token": "4067e461-2b1e-418d-8502-1b00514bc7e1",
-    "mongodb": "mongodb://jackson:12321@157.245.209.149:27017/hypixel",
+    "auctionToken": "hypixel token",
+    "mongodb": "mongodb://username:passsword@ip:port/dbname",
     "ws_port": 5001,
     "http_port": 5000,
-    "secret": "iudhewuhfwhf"
+    "secret": "very long secret like really long",
+    "callback_url": "https://url.com/api/users/callback",
+    "return_url": "https://url.com/auth",
+    "auth_secret": "discord auth secret",
+    "id": "discord id for application"
 }
