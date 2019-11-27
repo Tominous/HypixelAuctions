@@ -7,6 +7,8 @@ class Item {
     constructor(name, data) {
         this.name = name;
         this.data = data;
+
+        this.parsed = null;
     }
 
     async parseItem() {
@@ -16,8 +18,9 @@ class Item {
             nbt.parse(inflated, (e, d) => {
                 if (e) rej(e);
              
+                this.parsed = d.value.i.value.value[0];
                 res(d.value.i.value.value[0]);
-            }); 
+            });
         });
     
         return promise;
@@ -27,13 +30,22 @@ class Item {
         return this.name;
     }
 
+    get enchantments() {
+        if (!this.parsed.tag.value.ExtraAttributes.value.enchantments) return [];
+
+        const itemData = this.parsed.tag.value.ExtraAttributes.value.enchantments.value;
+        const enchants = Object.keys(itemData);
+
+        return enchants;
+    }
+
     async getMinecraftData() {
-        return await items.get(this.parseItem().Id.value);
+        return items.get(await this.parseItem().Id.value);
     }
 
     async getIcon() {
         const data = await this.parseItem();
-        if (!data) return items.get(166).icon;
+        if (!data.id.value) return items.get(166).icon;
 
         return items.get(data.id.value).icon;
     }

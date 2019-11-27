@@ -1,5 +1,6 @@
 const Hypixel = require('./Hypixel');
 const config = require('../config');
+const Auction = require('../types/Auction');
 const { EventEmitter } = require('events');
 const hypixelApi = new Hypixel(config.auctionToken);
 let auctionPages = 0;
@@ -12,7 +13,10 @@ const processAuctions = (data) => {
         if (a.end <= Date.now()) {
             auctionList.delete(a.uuid);
         } else {
-            auctionList.set(a.uuid, a);
+            const auction = new Auction(a);
+            auction.item.parseItem();
+            auctionList.set(a.uuid, auction);
+            emitter.emit('auctionCreated', a.uuid, a);
         };
     });
 };
@@ -29,12 +33,6 @@ const fetchAuctions = async () => {
         processAuctions(auctionPage);
     };
 };
-
-setInterval(() => {
-    auctionList.forEach(a => {
-        if (a.end <= Date.now()) return auctionList.delete(a.uuid);
-    })
-});
 
 setInterval(() => fetchAuctions(), 30000);
 

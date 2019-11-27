@@ -108,6 +108,28 @@ router.get('/users/mojang/:id', async (req, res) => {
     res.json({ success: true, data });
 });
 
+router.get('/users/hypixel/:name', async (req, res) => {
+    counter.inc();
+    req.on('end', () => counter.dec());
+
+    const name = req.params.name;
+    const userData = await getUserData(name);
+
+    if (userData) return res.json({ success: true, data: userData });
+    
+    const url = new URL("https://api.hypixel.net/player");
+    url.searchParams.append("key", config.userToken);
+    url.searchParams.append("name", name);
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.error) return res.json({ success: false });
+
+    await setUserData(data.uuid, { name: data.displayname, id: data.uuid });
+    res.json({ success: true, data: { name: data.displayname, id: data.uuid } });
+});
+
 router.get('/users/login', (req, res) => {
     counter.inc();
     req.on('end', () => counter.dec());

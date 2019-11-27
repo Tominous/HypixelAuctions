@@ -2,15 +2,15 @@ const { EventEmitter } = require('events');
 const { isEqual } = require('lodash');
 const config = require('../config');
 const Hypixel = require('./Hypixel');
-const Auction = require('../types/Auction');
 const Database = require('../storage/Mongo');
-const { emitter: auctionCache } = require('./AuctionCache');
+const Auction = require('../types/Auction');
+const { emitter: auctionCache, auctionList } = require('./AuctionCache');
 
 class HypixelAuctions extends EventEmitter {
     constructor() {
         super();
 
-        this.auctions = new Map();
+        this.auctions = auctionList;
         this.insertQueue = [];
         this.updateQueue = [];
 
@@ -27,18 +27,22 @@ class HypixelAuctions extends EventEmitter {
     async processAuction(auctionPage) {
         auctionPage.auctions.map(async a => {
             let auction = this.auctions.get(a.uuid);
-            if (!auction) {
-                auction = this.auctions.set(a.uuid, new Auction(a));
-                this.emit('auctionCreated', a.uuid, a);
-            } else {
-                if (!isEqual(auction.bids, a.bids)) {
-                    auction.setHighestBid(a.highest_bid_amount);
-                    auction.setBids(a.bids);
 
-                    this.emit('auctionUpdate', a.uuid, a);
-                }
+            if (!auction) return this.auctions.set(a.uuid, new Auction(a));
+
+            if (!isEqual(auction.bids, a.bids)) {
+                auction.setHighestBid(a.highest_bid_amount);
+                auction.setBids(a.bids);
+
+                this.emit('auctionUpdate', a.uuid, a);
             }
         });
+    }
+
+    async findByEnchant(enchant) {
+        const auctions = Array.from(this.auctions).map(a => ({ ...a[1] }));
+
+        auctions.filter(a => a.item.enchants.includes(enchant));
     }
 
     async updateItem(item, price, lore) {
