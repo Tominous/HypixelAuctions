@@ -21,7 +21,7 @@ router.get('/auctions', async (req, res) => {
     if (filters.name) data = auctionHouse.filter(i => (i.item_name.toLowerCase()).includes(filters.name.toLowerCase()));
     if (!data.length) data = auctionHouse;
 
-    if (filters.types) {
+    if (filters.types.length) {
         let typeData = [];
         filters.types.map(f => {
             switch (f) {
@@ -55,32 +55,32 @@ router.get('/auctions', async (req, res) => {
         data = typeData;
     }
 
-    if (filters.tiers) {
+    if (filters.tiers.length) {
         let tierData = [];
         filters.tiers.map(f => {
             switch (f) {
                 case "COMMON":
-                    const commonFiltered = auctionHouse.filter(a => a.tier === "COMMON");
+                    const commonFiltered = data.filter(a => a.tier === "COMMON");
                     commonFiltered.map(i => tierData.push(i));
                     break;
                 case "UNCOMMON":
-                    const uncommonFiltered = auctionHouse.filter(a => a.tier === "UNCOMMON");
+                    const uncommonFiltered = data.filter(a => a.tier === "UNCOMMON");
                     uncommonFiltered.map(i => tierData.push(i));
                     break;
                 case "RARE":
-                    const rareFiltered = auctionHouse.filter(a => a.tier === "RARE");
+                    const rareFiltered = data.filter(a => a.tier === "RARE");
                     rareFiltered.map(i => tierData.push(i));
                     break;
                 case "EPIC":
-                    const epicFiltered = auctionHouse.filter(a => a.tier === "EPIC");
+                    const epicFiltered = data.filter(a => a.tier === "EPIC");
                     epicFiltered.map(i => tierData.push(i));
                     break;
                 case "LEGENDARY":
-                    const legendaryFilter = auctionHouse.filter(a => a.tier === "LEGENDARY");
+                    const legendaryFilter = data.filter(a => a.tier === "LEGENDARY");
                     legendaryFilter.map(i => tierData.push(i));
                     break;
                 case "SPECIAL":
-                    const specialFilter = auctionHouse.filter(a => a.tier === "SPECIAL");
+                    const specialFilter = data.filter(a => a.tier === "SPECIAL");
                     specialFilter.map(i => tierData.push(i));
                     break;
             }
@@ -89,7 +89,7 @@ router.get('/auctions', async (req, res) => {
         data = tierData;
     }
 
-    if (filters.sort) {
+    if (filters.sort.length) {
         filters.sort.map(f => {
             switch (f) {
                 case "ENDING_SOON":
