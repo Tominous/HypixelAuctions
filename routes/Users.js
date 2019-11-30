@@ -124,10 +124,10 @@ router.get('/users/hypixel/:name', async (req, res) => {
     const response = await fetch(url);
     const data = await response.json();
 
-    if (data.error) return res.json({ success: false });
+    if (!data.success) return res.json({ success: false });
 
-    await setUserData(data.uuid, { name: data.displayname, id: data.uuid });
-    res.json({ success: true, data: { name: data.displayname, id: data.uuid } });
+    await setUserData(data.player.uuid, { name: data.player.displayname, id: data.player.uuid });
+    res.json({ success: true, data: { name: data.player.displayname, id: data.player.uuid } });
 });
 
 router.get('/users/login', (req, res) => {

@@ -25,19 +25,19 @@ router.get('/auctions', async (req, res) => {
 
     if (filters.name) data = auctionHouse.filter(i => (i.auction.item_name.toLowerCase()).includes(filters.name.toLowerCase()));
     if (!data.length) data = auctionHouse;
-    data = data.map(a => a.auction);
+    if (filters.player) data = auctionHouse.filter(i => i.auction.auctioneer === filters.player);
 
-    if (filters.enchants) {
-        if (filters.enchants.length) {
-            let enchantData = [];
-            filters.enchants.map(e => {
-                const enchantFilter = auctionHouse.filter(a => a.item.enchantments.includes(e));
+    if (filters.enchants.length) {
+        let enchantData = [];
+        filters.enchants.map(e => {
+            const enchantFilter = data.filter(a => a.item.enchantments.includes(e));
 
-                enchantFilter.map(e => enchantData.push(e));
-            });
+            enchantFilter.map(e => enchantData.push(e));
+        });
 
-            data = enchantData.map(a => a.auction);
-        };
+        data = enchantData.map(a => a.auction);
+    } else {
+        data = data.map(a => a.auction);
     };
 
     if (filters.types.length) {
@@ -45,27 +45,27 @@ router.get('/auctions', async (req, res) => {
         filters.types.map(f => {
             switch (f) {
                 case "weapon":
-                    const weaponsFilter = auctionHouse.filter(a => a.auction.category === "weapon");
+                    const weaponsFilter = data.filter(a => a.auction.category === "weapon");
                     weaponsFilter.map(i => typeData.push(i.auction));
                     break;
                 case "armor":
-                    const armorFilter = auctionHouse.filter(a => a.auction.category === "armor");
+                    const armorFilter = data.filter(a => a.auction.category === "armor");
                     armorFilter.map(i => typeData.push(i.auction));
                     break;
                 case "accessories":
-                    const accessoriesFilter = auctionHouse.filter(a => a.auction.category === "accessories");
+                    const accessoriesFilter = data.filter(a => a.auction.category === "accessories");
                     accessoriesFilter.map(i => typeData.push(i.auction));
                     break;
                 case "consumables":
-                    const consumablesFilter = auctionHouse.filter(a => a.auction.category === "consumables");
+                    const consumablesFilter = data.filter(a => a.auction.category === "consumables");
                     consumablesFilter.map(i => typeData.push(i.auction));
                     break;
                 case "blocks":
-                    const blocksFilter = auctionHouse.filter(a => a.auction.category === "blocks");
+                    const blocksFilter = data.filter(a => a.auction.category === "blocks");
                     blocksFilter.map(i => typeData.push(i.auction));
                     break;
                 case "misc":
-                    const miscFilter = auctionHouse.filter(a => a.auction.category === "misc");
+                    const miscFilter = data.filter(a => a.auction.category === "misc");
                     miscFilter.map(i => typeData.push(i.auction));
                     break;
             }
@@ -111,11 +111,11 @@ router.get('/auctions', async (req, res) => {
     if (filters.sort.length) {
         filters.sort.map(f => {
             switch (f) {
-                case "ENDING_SOON":
-                    data.sort((a, b) => a.end - b.end);
-                    break;
                 case "PRICE_LOW_HIGH":
                     data.sort((a, b) => (a.highest_bid_amount > 0 ? a.highest_bid_amount : a.starting_bid) - (b.highest_bid_amount > 0 ? b.highest_bid_amount : b.starting_bid));
+                    break;
+                case "ENDING_SOON":
+                    data.sort((a, b) => a.end - b.end);
                     break;
                 case "PRICE_HIGH_LOW":
                     data.sort((a, b) => (b.highest_bid_amount > 0 ? b.highest_bid_amount : b.starting_bid) - (a.highest_bid_amount > 0 ? a.highest_bid_amount : a.starting_bid));
