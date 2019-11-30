@@ -17,7 +17,11 @@ router.get('/items', async (req, res) => {
     if (filter.name) {
         if (page === "1") page = page - 1
         pageCount = await db.item.find({ $text: { $search: filter.name } }).countDocuments();
-        items = await db.item.find({ $text: { $search: filter.name } }).skip(itemsPerPage * page).limit(itemsPerPage);
+        items = await db.item.aggregate()
+            .match({ $text: { $search: filter.name } })
+            .sort({ score: { $meta: "textScore" } })
+            .skip(itemsPerPage * page)
+            .limit(itemsPerPage);
     } else {
         pageCount = await db.item.countDocuments();
         items = await db.item.find({}).skip(itemsPerPage * page).limit(itemsPerPage);
